@@ -259,9 +259,10 @@ for item in "${list[@]}"; do
     elsewhere_args=
     $run_elsewhere && elsewhere_args="-d $(printf %q "$run_dir")"
     for i in `seq $repeats`; do
-        echo "$0 $varg $elsewhere_args -o $(printf %q "$dir") -r $i -s $(printf %q "${item%%^*}") -- $(printf %q "${item#*^}")"
+        echo -n "$0 $varg $elsewhere_args -o $(printf %q "$dir") -r $i -s $(printf %q "${item%%^*}") -- $(printf %q "${item#*^}")"
+        printf '\0'
     done
-done | xargs -d '\n' -n 1 --max-procs=$parallel_tasks -I@ bash -c @
+done | xargs -0 -n 1 -P $parallel_tasks -I@ bash -c @
 trap - INT
 
 # Collect the results
