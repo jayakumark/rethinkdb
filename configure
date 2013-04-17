@@ -21,8 +21,7 @@ init () {
     other_libs="unwind tcmalloc_minimal"
     all_libs="$required_libs $other_libs"
     support_libs="unwind tcmalloc_minimal v8 protobuf"
-    suggested_static="protobuf"
-    recommended_static="tcmalloc_minimal"
+    default_static="tcmalloc_minimal"
 
     web_assets_deps="lessc coffee handlebars"
     npm_deps="$web_assets_deps"
@@ -111,7 +110,7 @@ main () {
     init
 
     read_args "$@"
-    
+
     echo "* Detecting system configuration"
 
     trap "show error; echo '* Aborting configure'" EXIT
@@ -124,7 +123,7 @@ main () {
     configure 3>> "$config"
 
     trap - EXIT
-    
+
     if ! $failed; then
         write "CONFIGURE_STATUS := success" 3>> "$config"
         echo "* Wrote configuration to $config"
@@ -133,7 +132,7 @@ main () {
         echo "* Aborting configure"
         exit 1
     fi
-    
+
 }
 
 # Parse the command line arguments
@@ -155,7 +154,7 @@ read_args () {
     required=false
     arg_vars=$'\1\2'
     lib_paths=
-    static_libs=$recommended_static
+    static_libs=$default_static
     arg_prefix=
     arg_sysconfdir=
     arg_localstatedir=
@@ -190,14 +189,10 @@ read_args () {
                 elif contains "$support_deps" "$arg"; then
                     fetch_list="$fetch_list $arg"
                 else
-                    die "Don't know how to fetch '$arg'" 
+                    die "Don't know how to fetch '$arg'"
                 fi ;;
             --static) $has_arg
-                if [[ "$arg" = suggested ]]; then
-                    static_libs=$suggested_static
-                elif [[ "$arg" = recommended ]]; then
-                    static_libs=$recommended_static
-                elif [[ "$arg" = none ]]; then
+                if [[ "$arg" = none ]]; then
                     static_libs=
                 elif [[ "$arg" = all ]]; then
                     static_libs=$all_libs
@@ -264,17 +259,13 @@ Usage: $0 [arguments]
   <DEP>=<path>            Library or executable path. <dep> can be
 EOF
     for dep in $all_deps; do
-        local padded="$dep                        "
+        local padded="$(uc $dep)                        "
         local descr
         lookup "$dep_descrs" $dep descr || descr=
         echo "                            ${padded:0:24} $descr"
     done
     cat <<EOF
-  --static <lib>          Statically link some libraries. <lib> is a library <dep> or one of:
-                            all          All libraries
-                            suggested    All recommended static libraries
-                            recommended  Highly recommended static libraries
-                            none         No static libraries
+  --static <lib>          Statically link some libraries. <lib> is a library name, 'all' or 'none'
   --prefix <dir>          Installation prefix. Defaults to /usr/local
   --sysconfdir <dir>      Configuration prefix. Defaults to /usr/local/etc
   --localstatedir <dir>   Runtime data prefix. Defaults to /usr/local/var
@@ -490,7 +481,7 @@ check_cxx () {
     else
         test_version_gt $(uc $type) $min_version $(read_version "$version_string") || return
     fi
-    
+
     show "$(uc $type) $version_string ($full_CXX)"
     var COMPILER "$(uc $type)"
     var CXX "$full_CXX"
